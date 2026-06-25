@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
+
+import '../app_locale.dart';
+import '../services/auth_token_store.dart';
+import '../theme/app_theme.dart';
+import '../widgets/language_toggle.dart';
+import 'home_screen.dart';
 import 'login_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'register_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -9,183 +17,218 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  int _currentPage = 0;
-  final PageController _pageController = PageController();
+  final _tokenStore = const AuthTokenStore();
 
-  static const _pages = [
-    _Page(
-      icon: Icons.description_outlined,
-      title: 'سيرتي',
-      body:
-          'حلل سيرتك الذاتية واحصل على درجة ATS، أو أنشئ سيرة ذاتية احترافية بالذكاء الاصطناعي',
-      colors: [Color(0xFF185FA5), Color(0xFF0C447C)],
-    ),
-    _Page(
-      icon: Icons.bar_chart_rounded,
-      title: 'تحليل ATS فوري',
-      body:
-          'احصل على درجة تفصيلية، الكلمات المفتاحية الناقصة، ونقاط القوة والضعف في ثوانٍ',
-      colors: [Color(0xFF0F6E56), Color(0xFF085041)],
-    ),
-    _Page(
-      icon: Icons.auto_awesome,
-      title: 'توليد CV بالذكاء',
-      body:
-          'أدخل بياناتك وسيُنشئ الذكاء الاصطناعي سيرة ذاتية احترافية قابلة للتنزيل بصيغة PDF',
-      colors: [Color(0xFF533AB7), Color(0xFF3C3489)],
-    ),
-  ];
+  Future<void> _goToLogin() async {
+    final token = await _tokenStore.readToken();
+    if (!mounted) return;
 
-  void _goToLogin() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (_) => token == null || token.isEmpty
+            ? const LoginScreen()
+            : const HomeScreen(),
+      ),
+    );
+  }
+
+  void _goToRegister() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+    );
+  }
+
+  void _openPrivacyPolicy() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final en = AppLocale.isEnglish(context);
+
     return Scaffold(
-      body: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            onPageChanged: (i) => setState(() => _currentPage = i),
-            itemCount: _pages.length,
-            itemBuilder: (_, i) => _PageView(page: _pages[i]),
+      backgroundColor: AppColors.background,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 1.15,
+            colors: [Color(0xFFE7F4EF), AppColors.background],
           ),
-          // Skip button
-          if (_currentPage < _pages.length - 1)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 16,
-              left: 20,
-              child: TextButton(
-                onPressed: _goToLogin,
-                style: TextButton.styleFrom(foregroundColor: Colors.white70),
-                child: const Text('تخطي', style: TextStyle(fontSize: 14)),
-              ),
-            ),
-          // Bottom controls
-          Positioned(
-            bottom: 48,
-            left: 24,
-            right: 24,
-            child: Column(
-              children: [
-                // Dots
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_pages.length, (i) {
-                    final active = i == _currentPage;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: active ? 22 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: active ? Colors.white : Colors.white38,
-                        borderRadius: BorderRadius.circular(4),
+        ),
+        child: CustomPaint(
+          painter: _DottedBackgroundPainter(),
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isTall = constraints.maxHeight >= 760;
+                final topGap = isTall ? 86.0 : 36.0;
+                final titleGap = isTall ? 40.0 : 26.0;
+                final actionGap = isTall ? 74.0 : 34.0;
+                final bottomGap = isTall ? 78.0 : 28.0;
+
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 26, 28, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Align(
+                            alignment: AlignmentDirectional.topStart,
+                            child: LanguageToggle(),
+                          ),
+                          SizedBox(height: topGap),
+                          const Center(child: _SplashLogo()),
+                          const SizedBox(height: 18),
+                          Text(
+                            en ? 'Sirati' : 'سيرتي',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 42,
+                              height: 1.15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          SizedBox(height: titleGap),
+                          Text(
+                            en
+                                ? 'Build Your CV Professionally'
+                                : 'اصنع سيرتك الذاتية باحترافية',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 28,
+                              height: 1.35,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            en
+                                ? 'Create an ATS-friendly CV, reach employers with confidence, and stand out with polished global templates.'
+                                : 'أنشئ سيرة ذاتية تجتاز فلاتر ATS، وتصل لأصحاب العمل بسهولة وبأرقى التصاميم العالمية.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              height: 1.75,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textHint,
+                            ),
+                          ),
+                          SizedBox(height: actionGap),
+                          ElevatedButton.icon(
+                            onPressed: _goToRegister,
+                            icon: Icon(
+                                en
+                                    ? Icons.arrow_forward_rounded
+                                    : Icons.arrow_back_rounded,
+                                size: 28),
+                            label:
+                                Text(en ? 'Create Account' : 'إنشاء حساب جديد'),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(64),
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 8,
+                              shadowColor:
+                                  AppColors.primary.withValues(alpha: .25),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          TextButton(
+                            onPressed: _openPrivacyPolicy,
+                            child: Text(
+                              en ? 'Sign In' : 'تسجيل الدخول',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: bottomGap),
+                          TextButton(
+                            onPressed: _goToLogin,
+                            child: Text(
+                              en ? 'Privacy Policy' : 'سياسة الخصوصية',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textHint,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_currentPage < _pages.length - 1) {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 350),
-                        curve: Curves.easeInOut,
-                      );
-                    } else {
-                      _goToLogin();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: _pages[_currentPage].colors[0],
-                    minimumSize: const Size.fromHeight(54),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                    textStyle: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
                   ),
-                  child: Text(_currentPage == _pages.length - 1
-                      ? 'ابدأ الآن'
-                      : 'التالي'),
-                ),
-              ],
+                );
+              },
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _Page {
-  final IconData icon;
-  final String title;
-  final String body;
-  final List<Color> colors;
-
-  const _Page(
-      {required this.icon,
-      required this.title,
-      required this.body,
-      required this.colors});
-}
-
-class _PageView extends StatelessWidget {
-  final _Page page;
-
-  const _PageView({required this.page});
+class _SplashLogo extends StatelessWidget {
+  const _SplashLogo();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: page.colors,
+    return Transform.rotate(
+      angle: .035,
+      child: Container(
+        width: 118,
+        height: 118,
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(34),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x26006A60),
+              blurRadius: 24,
+              offset: Offset(0, 12),
+            ),
+          ],
         ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 36),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(24)),
-                child: Icon(page.icon, size: 46, color: Colors.white),
-              ),
-              const SizedBox(height: 36),
-              Text(
-                page.title,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.2),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                page.body,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontSize: 16, color: Colors.white70, height: 1.7),
-              ),
-            ],
-          ),
+        child: const Icon(
+          Icons.description_outlined,
+          color: Colors.white,
+          size: 58,
         ),
       ),
     );
   }
+}
+
+class _DottedBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = AppColors.primary.withValues(alpha: .12);
+    const spacing = 32.0;
+
+    for (double y = 18; y < size.height; y += spacing) {
+      for (double x = 18; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.25, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

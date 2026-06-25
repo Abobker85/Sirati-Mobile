@@ -2,6 +2,7 @@
 .flutter-plugins
 .flutter-plugins-dependencies
 .metadata
+.idea/
 
 build/
 coverage/
@@ -24,4 +25,5 @@ windows/flutter/ephemeral/
 .DS_Store
 
 new_design/
+new_stitch_design/
 *_context__*.zip

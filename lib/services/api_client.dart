@@ -7,17 +7,21 @@ import 'api_config.dart';
 import 'api_exception.dart';
 
 class ApiClient {
-  ApiClient({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+  ApiClient(
+      {http.Client? httpClient, Future<String?> Function()? tokenProvider})
+      : _httpClient = httpClient ?? http.Client(),
+        _tokenProvider = tokenProvider;
 
   final http.Client _httpClient;
+  final Future<String?> Function()? _tokenProvider;
   static const _timeout = Duration(seconds: 45);
 
   Future<Map<String, dynamic>> getJson(String path) async {
+    final headers = await _headers();
     final response = await _send(() {
       return _httpClient.get(
         ApiConfig.uri(path),
-        headers: const {'Accept': 'application/json'},
+        headers: headers,
       );
     });
 
@@ -28,14 +32,40 @@ class ApiClient {
     String path,
     Map<String, dynamic> body,
   ) async {
+    final headers = await _headers(contentType: 'application/json');
     final response = await _send(() {
       return _httpClient.post(
         ApiConfig.uri(path),
-        headers: const {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: jsonEncode(body),
+      );
+    });
+
+    return _decodeObject(response);
+  }
+
+  Future<Map<String, dynamic>> putJson(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final headers = await _headers(contentType: 'application/json');
+    final response = await _send(() {
+      return _httpClient.put(
+        ApiConfig.uri(path),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+    });
+
+    return _decodeObject(response);
+  }
+
+  Future<Map<String, dynamic>> deleteJson(String path) async {
+    final headers = await _headers();
+    final response = await _send(() {
+      return _httpClient.delete(
+        ApiConfig.uri(path),
+        headers: headers,
       );
     });
 
@@ -47,9 +77,10 @@ class ApiClient {
     required Map<String, String> fields,
     http.MultipartFile? file,
   }) async {
+    final headers = await _headers();
     final response = await _send(() async {
       final request = http.MultipartRequest('POST', ApiConfig.uri(path))
-        ..headers['Accept'] = 'application/json'
+        ..headers.addAll(headers)
         ..fields.addAll(fields);
 
       if (file != null) {
@@ -91,6 +122,20 @@ class ApiClient {
     }
 
     throw const ApiException('استجابة الخادم غير متوقعة.');
+  }
+
+  Future<Map<String, String>> _headers({String? contentType}) async {
+    final headers = <String, String>{'Accept': 'application/json'};
+    if (contentType != null) {
+      headers['Content-Type'] = contentType;
+    }
+
+    final token = await _tokenProvider?.call();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
   }
 
   ApiException _exceptionFromResponse(http.Response response) {

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../app_locale.dart';
 import '../models/generated_cv.dart';
 import '../theme/app_theme.dart';
+import '../widgets/language_toggle.dart';
+import 'cv_generator_screen.dart';
 
 class GeneratedCvScreen extends StatelessWidget {
   final GeneratedCv generatedCv;
@@ -10,16 +13,22 @@ class GeneratedCvScreen extends StatelessWidget {
   const GeneratedCvScreen({super.key, required this.generatedCv});
 
   Future<void> _downloadPdf(BuildContext context) async {
+    final english = AppLocale.isEnglish(context);
     final pdfUrl = generatedCv.pdfUrl;
     if (pdfUrl == null || pdfUrl.isEmpty) {
-      _showMessage(context, 'رابط PDF غير متاح حالياً.');
+      _showMessage(
+          context,
+          english
+              ? 'PDF link is not available yet.'
+              : 'رابط PDF غير متاح حالياً.');
       return;
     }
 
     final launched = await launchUrl(Uri.parse(pdfUrl),
         mode: LaunchMode.externalApplication);
     if (!launched && context.mounted) {
-      _showMessage(context, 'تعذر فتح رابط PDF.');
+      _showMessage(context,
+          english ? 'Could not open the PDF link.' : 'تعذر فتح رابط PDF.');
     }
   }
 
@@ -42,14 +51,17 @@ class GeneratedCvScreen extends StatelessWidget {
         .whereType<String>()
         .where((value) => value.trim().isNotEmpty)
         .join(' · ');
+    final english = AppLocale.isEnglish(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('السيرة الذاتية'),
+        title: Text(english ? 'Generated CV' : 'السيرة الذاتية'),
         actions: [
+          const LanguageToggle(),
           IconButton(
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => Navigator.pop(context)),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => CvGeneratorScreen(initialCv: generatedCv)))),
         ],
       ),
       body: Column(
@@ -68,10 +80,12 @@ class GeneratedCvScreen extends StatelessWidget {
                   const Icon(Icons.auto_awesome,
                       color: AppColors.teal, size: 18),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'تم إنشاء السيرة · درجة ATS: ',
-                      style: TextStyle(
+                      english
+                          ? 'CV generated · ATS score: '
+                          : 'تم إنشاء السيرة · درجة ATS: ',
+                      style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.tealDark,
                           fontWeight: FontWeight.w500),
@@ -88,8 +102,8 @@ class GeneratedCvScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.tealLight,
                       borderRadius: BorderRadius.circular(20),
-                      border:
-                          Border.all(color: AppColors.teal.withOpacity(0.4)),
+                      border: Border.all(
+                          color: AppColors.teal.withValues(alpha: .4)),
                     ),
                     child: Text(generatedCv.grade,
                         style: const TextStyle(
@@ -114,7 +128,9 @@ class GeneratedCvScreen extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'تم إنشاء نسخة محلية لأن الذكاء الاصطناعي لم يكتمل: ${generatedCv.aiError}',
+                      english
+                          ? 'A local version was created because AI generation did not complete: ${generatedCv.aiError}'
+                          : 'تم إنشاء نسخة محلية لأن الذكاء الاصطناعي لم يكتمل: ${generatedCv.aiError}',
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.amber, height: 1.4),
                       textAlign: TextAlign.right,
@@ -152,8 +168,11 @@ class GeneratedCvScreen extends StatelessWidget {
                             fontSize: 12, color: AppColors.textSecondary)),
                   const Divider(height: 24, color: AppColors.border),
                   if (generatedCv.generatedMarkdown.trim().isEmpty)
-                    const Text('لا يوجد محتوى للسيرة حالياً.',
-                        style: TextStyle(
+                    Text(
+                        english
+                            ? 'No CV content is available yet.'
+                            : 'لا يوجد محتوى للسيرة حالياً.',
+                        style: const TextStyle(
                             fontSize: 13, color: AppColors.textSecondary))
                   else
                     ..._buildMarkdownSections(generatedCv.generatedMarkdown),
@@ -169,7 +188,7 @@ class GeneratedCvScreen extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: _shareCv,
                     icon: const Icon(Icons.share_outlined, size: 18),
-                    label: const Text('مشاركة'),
+                    label: Text(english ? 'Share' : 'مشاركة'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -177,7 +196,7 @@ class GeneratedCvScreen extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _downloadPdf(context),
                     icon: const Icon(Icons.download_outlined, size: 18),
-                    label: const Text('تنزيل PDF'),
+                    label: Text(english ? 'Download PDF' : 'تنزيل PDF'),
                   ),
                 ),
               ],

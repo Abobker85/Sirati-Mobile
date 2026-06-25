@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:sirati/services/api_client.dart';
 import 'package:sirati/services/api_exception.dart';
+import 'package:sirati/services/auth_api_service.dart';
+import 'package:sirati/services/auth_token_store.dart';
 import 'package:sirati/services/cv_api_service.dart';
 
 void main() {
@@ -43,7 +45,7 @@ void main() {
             expect(request.headers['content-type'],
                 contains('multipart/form-data'));
 
-            final body = request is http.Request ? request.body : '';
+            final body = request.body;
             expect(body, contains('name="target_job_title"'));
             expect(body, contains('Data Analyst'));
             expect(body, contains('name="resume_text"'));
@@ -126,6 +128,77 @@ void main() {
       );
     });
   });
+
+  group('AuthApiService', () {
+    test('logs in and stores the returned token', () async {
+      final tokenStore = _MemoryAuthTokenStore();
+      final service = AuthApiService(
+        tokenStore: tokenStore,
+        apiClient: ApiClient(
+          httpClient: MockClient((request) async {
+            expect(request.method, 'POST');
+            expect(request.url.path, '/api/auth/login');
+
+            final payload = jsonDecode(request.body) as Map<String, dynamic>;
+            expect(payload['email'], 'salem@example.com');
+            expect(payload['password'], 'password123');
+            expect(payload['device_name'], 'sirati-mobile');
+
+            return _jsonResponse({'data': _authSessionJson()});
+          }),
+        ),
+      );
+
+      final session = await service.login(
+        email: 'salem@example.com',
+        password: 'password123',
+      );
+
+      expect(session.token, 'plain-text-token');
+      expect(session.user.email, 'salem@example.com');
+      expect(await tokenStore.readToken(), 'plain-text-token');
+    });
+
+    test('registers and stores the returned token', () async {
+      final tokenStore = _MemoryAuthTokenStore();
+      final service = AuthApiService(
+        tokenStore: tokenStore,
+        apiClient: ApiClient(
+          httpClient: MockClient((request) async {
+            expect(request.method, 'POST');
+            expect(request.url.path, '/api/auth/register');
+
+            final payload = jsonDecode(request.body) as Map<String, dynamic>;
+            expect(payload['name'], 'Salem Sayer');
+            expect(payload['password_confirmation'], 'password123');
+
+            return _jsonResponse({'data': _authSessionJson()}, statusCode: 201);
+          }),
+        ),
+      );
+
+      await service.register(
+        name: 'Salem Sayer',
+        email: 'salem@example.com',
+        password: 'password123',
+        passwordConfirmation: 'password123',
+      );
+
+      expect(await tokenStore.readToken(), 'plain-text-token');
+    });
+
+    test('sends bearer token when token provider returns one', () async {
+      final apiClient = ApiClient(
+        tokenProvider: () async => 'stored-token',
+        httpClient: MockClient((request) async {
+          expect(request.headers['authorization'], 'Bearer stored-token');
+          return _jsonResponse({'data': _analysisJson()});
+        }),
+      );
+
+      await apiClient.getJson('/cv-analyses/1');
+    });
+  });
 }
 
 http.Response _jsonResponse(Map<String, dynamic> body, {int statusCode = 200}) {
@@ -189,4 +262,34 @@ Map<String, dynamic> _generatedCvJson() {
     'created_at': '2026-06-18T08:00:00.000000Z',
     'updated_at': '2026-06-18T08:00:00.000000Z',
   };
+}
+
+Map<String, dynamic> _authSessionJson() {
+  return {
+    'token': 'plain-text-token',
+    'token_type': 'Bearer',
+    'user': {
+      'id': 5,
+      'name': 'Salem Sayer',
+      'email': 'salem@example.com',
+      'created_at': '2026-06-18T08:00:00.000000Z',
+    },
+  };
+}
+
+class _MemoryAuthTokenStore extends AuthTokenStore {
+  String? _token;
+
+  @override
+  Future<String?> readToken() async => _token;
+
+  @override
+  Future<void> saveToken(String token) async {
+    _token = token;
+  }
+
+  @override
+  Future<void> clearToken() async {
+    _token = null;
+  }
 }

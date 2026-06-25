@@ -166,14 +166,14 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> {
                               width: 1.5,
                               style: BorderStyle.solid),
                           borderRadius: BorderRadius.circular(14),
-                          color: AppColors.primaryLight.withOpacity(.5),
+                          color: AppColors.primaryLight.withValues(alpha: .5),
                         ),
                         child: Column(
                           children: [
                             Container(
                               width: 52,
                               height: 52,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                   color: AppColors.primaryLight,
                                   shape: BoxShape.circle),
                               child: const Icon(Icons.cloud_upload_outlined,
@@ -201,8 +201,8 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.tealLight,
                         borderRadius: BorderRadius.circular(12),
-                        border:
-                            Border.all(color: AppColors.teal.withOpacity(.4)),
+                        border: Border.all(
+                            color: AppColors.teal.withValues(alpha: .4)),
                       ),
                       child: Row(
                         children: [

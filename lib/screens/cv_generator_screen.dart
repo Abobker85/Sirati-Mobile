@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/api_exception.dart';
 import '../services/cv_api_service.dart';
+import '../app_locale.dart';
+import '../models/generated_cv.dart';
+import '../widgets/language_toggle.dart';
 import 'generated_cv_screen.dart';
 
 class CvGeneratorScreen extends StatefulWidget {
-  const CvGeneratorScreen({super.key});
+  final GeneratedCv? initialCv;
+
+  const CvGeneratorScreen({super.key, this.initialCv});
 
   @override
   State<CvGeneratorScreen> createState() => _CvGeneratorScreenState();
@@ -14,6 +19,7 @@ class CvGeneratorScreen extends StatefulWidget {
 class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
   int _step = 0;
   bool _isLoading = false;
+  bool _isEnhancingJobDescription = false;
   String _language = 'ar';
   final _apiService = CvApiService();
 
@@ -23,6 +29,7 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
   final _linkedinCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _jobTitleCtrl = TextEditingController();
+  final _jobDescriptionCtrl = TextEditingController();
   final _summaryCtrl = TextEditingController();
   final _skillsCtrl = TextEditingController();
   final _experienceCtrl = TextEditingController();
@@ -30,6 +37,29 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
   final _certsCtrl = TextEditingController();
 
   static const _steps = ['الشخصية', 'المهارات', 'الخبرات', 'التعليم'];
+
+  bool get _isEditMode => widget.initialCv != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final cv = widget.initialCv;
+    if (cv == null) return;
+
+    _nameCtrl.text = cv.fullName;
+    _emailCtrl.text = cv.email ?? '';
+    _phoneCtrl.text = cv.phone ?? '';
+    _linkedinCtrl.text = cv.linkedin ?? '';
+    _locationCtrl.text = cv.location ?? '';
+    _jobTitleCtrl.text = cv.targetJobTitle;
+    _jobDescriptionCtrl.text = cv.jobDescriptionInput ?? '';
+    _language = cv.language;
+    _summaryCtrl.text = cv.summaryInput ?? '';
+    _skillsCtrl.text = cv.skillsInput;
+    _experienceCtrl.text = cv.experienceInput;
+    _educationCtrl.text = cv.educationInput;
+    _certsCtrl.text = cv.certificationsInput ?? '';
+  }
 
   @override
   void dispose() {
@@ -40,6 +70,7 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
       _linkedinCtrl,
       _locationCtrl,
       _jobTitleCtrl,
+      _jobDescriptionCtrl,
       _summaryCtrl,
       _skillsCtrl,
       _experienceCtrl,
@@ -55,20 +86,25 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final generatedCv = await _apiService.generateCv({
+      final payload = {
         'full_name': _nameCtrl.text.trim(),
         'email': _nullable(_emailCtrl.text),
         'phone': _nullable(_phoneCtrl.text),
         'linkedin': _nullable(_linkedinCtrl.text),
         'location': _nullable(_locationCtrl.text),
         'target_job_title': _jobTitleCtrl.text.trim(),
+        'job_description_input': _nullable(_jobDescriptionCtrl.text),
         'language': _language,
         'summary_input': _nullable(_summaryCtrl.text),
         'skills_input': _skillsCtrl.text.trim(),
         'experience_input': _experienceCtrl.text.trim(),
         'education_input': _educationCtrl.text.trim(),
         'certifications_input': _nullable(_certsCtrl.text),
-      });
+      };
+
+      final generatedCv = _isEditMode
+          ? await _apiService.updateGeneratedCv(widget.initialCv!.id, payload)
+          : await _apiService.generateCv(payload);
 
       if (!mounted) return;
       Navigator.of(context).push(
@@ -89,15 +125,52 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
     return trimmed.isEmpty ? null : trimmed;
   }
 
+  Future<void> _enhanceJobDescription() async {
+    final english = AppLocale.isEnglish(context);
+    final targetJobTitle = _jobTitleCtrl.text.trim();
+
+    if (targetJobTitle.isEmpty) {
+      _showError(english
+          ? 'Enter the target job title first.'
+          : 'أدخل المسمى الوظيفي المستهدف أولاً.');
+      return;
+    }
+
+    setState(() => _isEnhancingJobDescription = true);
+
+    try {
+      final data = await _apiService.enhanceJobDescription(
+        targetJobTitle: targetJobTitle,
+        jobDescription: _jobDescriptionCtrl.text.trim(),
+        language: _language,
+      );
+      final enhanced = data['enhanced_description']?.toString() ?? '';
+      if (enhanced.isEmpty) return;
+      _jobDescriptionCtrl.text = enhanced;
+      _showError(
+          english ? 'Job description enhanced.' : 'تم تحسين الوصف الوظيفي.');
+    } on ApiException catch (exception) {
+      if (mounted) _showError(exception.displayMessage);
+    } finally {
+      if (mounted) setState(() => _isEnhancingJobDescription = false);
+    }
+  }
+
   bool _validateCurrentStep() {
+    final english = AppLocale.languageCode.value == 'en';
     final message = switch (_step) {
-      0 when _nameCtrl.text.trim().isEmpty => 'الاسم الكامل مطلوب.',
-      0 when _jobTitleCtrl.text.trim().isEmpty =>
-        'المسمى الوظيفي المستهدف مطلوب.',
-      1 when _skillsCtrl.text.trim().isEmpty => 'المهارات الأساسية مطلوبة.',
-      2 when _experienceCtrl.text.trim().length < 80 =>
-        'اكتب الخبرات العملية بتفاصيل لا تقل عن 80 حرفاً.',
-      3 when _educationCtrl.text.trim().isEmpty => 'التعليم مطلوب.',
+      0 when _nameCtrl.text.trim().isEmpty =>
+        english ? 'Full name is required.' : 'الاسم الكامل مطلوب.',
+      0 when _jobTitleCtrl.text.trim().isEmpty => english
+          ? 'Target job title is required.'
+          : 'المسمى الوظيفي المستهدف مطلوب.',
+      1 when _skillsCtrl.text.trim().isEmpty =>
+        english ? 'Core skills are required.' : 'المهارات الأساسية مطلوبة.',
+      2 when _experienceCtrl.text.trim().length < 80 => english
+          ? 'Write at least 80 characters about your experience.'
+          : 'اكتب الخبرات العملية بتفاصيل لا تقل عن 80 حرفاً.',
+      3 when _educationCtrl.text.trim().isEmpty =>
+        english ? 'Education is required.' : 'التعليم مطلوب.',
       _ => null,
     };
 
@@ -116,19 +189,149 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final english = AppLocale.isEnglish(context);
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('إنشاء سيرة ذاتية'),
+        title: Text(_isEditMode
+            ? (english ? 'Edit CV' : 'تعديل السيرة')
+            : (english ? 'Create CV' : 'إنشاء سيرة ذاتية')),
+        actions: const [
+          Padding(
+            padding: EdgeInsetsDirectional.only(end: 12),
+            child: LanguageToggle(),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // ── Step indicator ──
+          Builder(builder: (context) {
+            final steps = english
+                ? const ['Personal', 'Skills', 'Experience', 'Education']
+                : _steps;
+
+            return Container(
+              color: AppColors.background,
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 18),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        english
+                            ? 'Step ${_step + 1} of ${steps.length}'
+                            : 'خطوة ${_step + 1} من ${steps.length}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      Text(
+                        steps[_step],
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: List.generate(steps.length * 2 - 1, (i) {
+                      if (i.isOdd) {
+                        final done = i ~/ 2 < _step;
+                        return Expanded(
+                            child: Container(
+                                height: 2,
+                                color: done
+                                    ? AppColors.primaryContainer
+                                    : AppColors.surfaceHigh));
+                      }
+                      final idx = i ~/ 2;
+                      final done = idx < _step;
+                      final active = idx == _step;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: done
+                              ? AppColors.primaryContainer
+                              : active
+                                  ? AppColors.amberAccent
+                                  : AppColors.surfaceHigh,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: done
+                              ? const Icon(Icons.check_rounded,
+                                  size: 16, color: Colors.white)
+                              : Text('${idx + 1}',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: active
+                                          ? AppColors.primaryDark
+                                          : AppColors.textHint)),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: steps
+                        .asMap()
+                        .entries
+                        .map((e) => Text(
+                              e.value,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: e.key <= _step
+                                    ? AppColors.primary
+                                    : AppColors.textHint,
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ],
+              ),
+            );
+          }),
+          /* old progress header removed */
+          /*
           Container(
-            color: AppColors.primary,
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            color: AppColors.background,
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 18),
             child: Column(
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'خطوة ${_step + 1} من ${_steps.length}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      _steps[_step],
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
                 Row(
                   children: List.generate(_steps.length * 2 - 1, (i) {
                     if (i.isOdd) {
@@ -136,33 +339,36 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
                       return Expanded(
                           child: Container(
                               height: 2,
-                              color: done ? Colors.white : Colors.white30));
+                              color: done
+                                  ? AppColors.primaryContainer
+                                  : AppColors.surfaceHigh));
                     }
                     final idx = i ~/ 2;
                     final done = idx < _step;
                     final active = idx == _step;
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
-                      width: 30,
-                      height: 30,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
-                        color: done || active ? Colors.white : Colors.white24,
+                        color: done
+                            ? AppColors.primaryContainer
+                            : active
+                                ? AppColors.amberAccent
+                                : AppColors.surfaceHigh,
                         shape: BoxShape.circle,
-                        border: active
-                            ? Border.all(color: Colors.white, width: 2)
-                            : null,
                       ),
                       child: Center(
                         child: done
-                            ? Icon(Icons.check_rounded,
-                                size: 16, color: AppColors.primary)
+                            ? const Icon(Icons.check_rounded,
+                                size: 16, color: Colors.white)
                             : Text('${idx + 1}',
                                 style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: active
-                                        ? AppColors.primary
-                                        : Colors.white70)),
+                                        ? AppColors.primaryDark
+                                        : AppColors.textHint)),
                       ),
                     );
                   }),
@@ -179,8 +385,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: e.key <= _step
-                                  ? Colors.white
-                                  : Colors.white38,
+                                  ? AppColors.primary
+                                  : AppColors.textHint,
                             ),
                           ))
                       .toList(),
@@ -188,16 +394,17 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
               ],
             ),
           ),
+          */
 
           // ── Step content ──
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
               children: [
-                if (_step == 0) _buildStep0(),
-                if (_step == 1) _buildStep1(),
-                if (_step == 2) _buildStep2(),
-                if (_step == 3) _buildStep3(),
+                if (_step == 0) _buildStep0(english),
+                if (_step == 1) _buildStep1(english),
+                if (_step == 2) _buildStep2(english),
+                if (_step == 3) _buildStep3(english),
                 const SizedBox(height: 28),
                 Row(
                   children: [
@@ -205,7 +412,7 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => setState(() => _step--),
-                          child: const Text('السابق'),
+                          child: Text(english ? 'Back' : 'السابق'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -236,10 +443,14 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
                                     : Icons.arrow_forward_ios_rounded,
                                 size: 18),
                         label: Text(_isLoading
-                            ? 'جارٍ التوليد...'
+                            ? (english ? 'Generating...' : 'جارٍ التوليد...')
                             : _step == _steps.length - 1
-                                ? 'توليد السيرة'
-                                : 'التالي'),
+                                ? (_isEditMode
+                                    ? (english ? 'Update CV' : 'تحديث السيرة')
+                                    : (english
+                                        ? 'Generate CV'
+                                        : 'توليد السيرة'))
+                                : (english ? 'Next' : 'التالي')),
                       ),
                     ),
                   ],
@@ -252,9 +463,10 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
     );
   }
 
-  Widget _fieldGroup(String label, Widget field) {
+  Widget _fieldGroup(String label, Widget field, bool english) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment:
+          english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
         Text(label,
             style: const TextStyle(
@@ -267,28 +479,31 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
     );
   }
 
-  Widget _buildStep0() {
+  Widget _buildStep0(bool english) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment:
+          english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        const Text('المعلومات الشخصية',
-            style: TextStyle(
+        Text(english ? 'Personal Information' : 'المعلومات الشخصية',
+            style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: AppColors.primaryDark)),
         const SizedBox(height: 18),
         _fieldGroup(
-            'الاسم الكامل *',
+            english ? 'Full Name *' : 'الاسم الكامل *',
             TextFormField(
               controller: _nameCtrl,
-              textDirection: TextDirection.rtl,
-              decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.person_outline),
-                  hintText: 'سالم سيار'),
-            )),
+              textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: english ? TextAlign.left : TextAlign.right,
+              decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.person_outline),
+                  hintText: english ? 'Salem Sayer' : 'سالم سيار'),
+            ),
+            english),
         const SizedBox(height: 14),
         _fieldGroup(
-            'البريد الإلكتروني',
+            english ? 'Email' : 'البريد الإلكتروني',
             TextFormField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
@@ -297,10 +512,11 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
               decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.email_outlined),
                   hintText: 'salem@example.com'),
-            )),
+            ),
+            english),
         const SizedBox(height: 14),
         _fieldGroup(
-            'رقم الهاتف',
+            english ? 'Phone' : 'رقم الهاتف',
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
@@ -309,10 +525,11 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
               decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.phone_outlined),
                   hintText: '+966 5X XXX XXXX'),
-            )),
+            ),
+            english),
         const SizedBox(height: 14),
         _fieldGroup(
-            'رابط LinkedIn',
+            english ? 'LinkedIn URL' : 'رابط LinkedIn',
             TextFormField(
               controller: _linkedinCtrl,
               textDirection: TextDirection.ltr,
@@ -320,20 +537,62 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
               decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.link_rounded),
                   hintText: 'linkedin.com/in/username'),
-            )),
+            ),
+            english),
         const SizedBox(height: 14),
         _fieldGroup(
-            'المسمى الوظيفي المستهدف *',
+            english ? 'Target Job Title *' : 'المسمى الوظيفي المستهدف *',
             TextFormField(
               controller: _jobTitleCtrl,
-              textDirection: TextDirection.rtl,
+              textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: english ? TextAlign.left : TextAlign.right,
               decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.work_outline_rounded),
                   hintText: 'Laravel Backend Developer'),
-            )),
+            ),
+            english),
+        const SizedBox(height: 14),
+        _fieldGroup(
+            english ? 'Job Description (optional)' : 'الوصف الوظيفي (اختياري)',
+            Column(
+              crossAxisAlignment:
+                  english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+              children: [
+                TextFormField(
+                  controller: _jobDescriptionCtrl,
+                  textDirection:
+                      english ? TextDirection.ltr : TextDirection.rtl,
+                  textAlign: english ? TextAlign.left : TextAlign.right,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.assignment_outlined),
+                    hintText: english
+                        ? 'Paste the job description or let AI complete it from the role...'
+                        : 'الصق الوصف الوظيفي أو دع الذكاء الاصطناعي يكمله من المسمى...',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _isEnhancingJobDescription
+                      ? null
+                      : _enhanceJobDescription,
+                  icon: _isEnhancingJobDescription
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_fix_high_rounded, size: 18),
+                  label: Text(
+                      english ? 'Enhance with AI' : 'تحسين بالذكاء الاصطناعي'),
+                ),
+              ],
+            ),
+            english),
         const SizedBox(height: 18),
-        const Text('لغة السيرة الذاتية',
-            style: TextStyle(
+        Text(english ? 'CV Language' : 'لغة السيرة الذاتية',
+            style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary)),
@@ -365,58 +624,76 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
     );
   }
 
-  Widget _buildStep1() {
+  Widget _buildStep1(bool english) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment:
+          english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        const Text('المهارات والملخص',
-            style: TextStyle(
+        Text(english ? 'Skills & Summary' : 'المهارات والملخص',
+            style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: AppColors.primaryDark)),
         const SizedBox(height: 6),
-        const Text('أدخل مهاراتك مفصولة بفاصلة',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+        Text(
+            english
+                ? 'Enter skills separated by commas'
+                : 'أدخل مهاراتك مفصولة بفاصلة',
+            style:
+                const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
         const SizedBox(height: 18),
         _fieldGroup(
-            'المهارات الأساسية *',
+            english ? 'Core Skills *' : 'المهارات الأساسية *',
             TextFormField(
               controller: _skillsCtrl,
-              textDirection: TextDirection.rtl,
+              textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: english ? TextAlign.left : TextAlign.right,
               maxLines: 4,
               decoration: const InputDecoration(
                 hintText: 'PHP, Laravel, API, SQL, Git, Agile, Docker',
                 alignLabelWithHint: true,
               ),
-            )),
+            ),
+            english),
         const SizedBox(height: 14),
         _fieldGroup(
-            'الملخص المهني (اختياري، سيُولَّد تلقائياً)',
+            english
+                ? 'Professional Summary (optional)'
+                : 'الملخص المهني (اختياري، سيُولَّد تلقائياً)',
             TextFormField(
               controller: _summaryCtrl,
-              textDirection: TextDirection.rtl,
+              textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: english ? TextAlign.left : TextAlign.right,
               maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'نبذة مختصرة عن خبرتك وإنجازاتك...',
+              decoration: InputDecoration(
+                hintText: english
+                    ? 'Briefly describe your experience and achievements...'
+                    : 'نبذة مختصرة عن خبرتك وإنجازاتك...',
                 alignLabelWithHint: true,
               ),
-            )),
+            ),
+            english),
       ],
     );
   }
 
-  Widget _buildStep2() {
+  Widget _buildStep2(bool english) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment:
+          english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        const Text('الخبرات العملية',
-            style: TextStyle(
+        Text(english ? 'Work Experience' : 'الخبرات العملية',
+            style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: AppColors.primaryDark)),
         const SizedBox(height: 6),
-        const Text('اذكر المسمى، الشركة، التاريخ، والإنجازات بأرقام',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+        Text(
+            english
+                ? 'Include title, company, dates, and measurable achievements'
+                : 'اذكر المسمى، الشركة، التاريخ، والإنجازات بأرقام',
+            style:
+                const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(12),
@@ -424,15 +701,17 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(12)),
           child: Row(
-            children: const [
+            children: [
               Expanded(
                   child: Text(
-                      'كلما ذكرت أرقاماً (35%، 20 مستخدم)، زادت درجة ATS',
-                      style:
-                          TextStyle(fontSize: 12, color: AppColors.primaryDark),
+                      english
+                          ? 'Numbers like 35% or 20 users improve your ATS score.'
+                          : 'كلما ذكرت أرقاماً (35%، 20 مستخدم)، زادت درجة ATS',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.primaryDark),
                       textAlign: TextAlign.right)),
-              SizedBox(width: 8),
-              Icon(Icons.tips_and_updates_outlined,
+              const SizedBox(width: 8),
+              const Icon(Icons.tips_and_updates_outlined,
                   color: AppColors.primary, size: 20),
             ],
           ),
@@ -440,7 +719,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _experienceCtrl,
-          textDirection: TextDirection.rtl,
+          textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+          textAlign: english ? TextAlign.left : TextAlign.right,
           maxLines: 10,
           decoration: const InputDecoration(
             hintText:
@@ -452,40 +732,47 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
     );
   }
 
-  Widget _buildStep3() {
+  Widget _buildStep3(bool english) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment:
+          english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        const Text('التعليم والشهادات',
-            style: TextStyle(
+        Text(english ? 'Education & Certifications' : 'التعليم والشهادات',
+            style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: AppColors.primaryDark)),
         const SizedBox(height: 18),
         _fieldGroup(
-            'التعليم *',
+            english ? 'Education *' : 'التعليم *',
             TextFormField(
               controller: _educationCtrl,
-              textDirection: TextDirection.rtl,
+              textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: english ? TextAlign.left : TextAlign.right,
               maxLines: 4,
               decoration: const InputDecoration(
                 hintText: 'بكالوريوس علوم الحاسب، جامعة الملك عبدالعزيز، 2020',
                 alignLabelWithHint: true,
               ),
-            )),
+            ),
+            english),
         const SizedBox(height: 14),
         _fieldGroup(
-            'الشهادات والدورات (اختياري)',
+            english
+                ? 'Certifications & Courses (optional)'
+                : 'الشهادات والدورات (اختياري)',
             TextFormField(
               controller: _certsCtrl,
-              textDirection: TextDirection.rtl,
+              textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: english ? TextAlign.left : TextAlign.right,
               maxLines: 4,
               decoration: const InputDecoration(
                 hintText:
                     'AWS Certified Cloud Practitioner، 2023\nGoogle Cloud Associate، 2022',
                 alignLabelWithHint: true,
               ),
-            )),
+            ),
+            english),
       ],
     );
   }

@@ -8,7 +8,13 @@ class GeneratedCv {
   final String? linkedin;
   final String? location;
   final String targetJobTitle;
+  final String? jobDescriptionInput;
   final String language;
+  final String? summaryInput;
+  final String skillsInput;
+  final String experienceInput;
+  final String educationInput;
+  final String? certificationsInput;
   final String generatedMarkdown;
   final String aiStatus;
   final Map<String, dynamic>? aiOutput;
@@ -27,7 +33,13 @@ class GeneratedCv {
     required this.linkedin,
     required this.location,
     required this.targetJobTitle,
+    required this.jobDescriptionInput,
     required this.language,
+    required this.summaryInput,
+    required this.skillsInput,
+    required this.experienceInput,
+    required this.educationInput,
+    required this.certificationsInput,
     required this.generatedMarkdown,
     required this.aiStatus,
     required this.aiOutput,
@@ -48,7 +60,13 @@ class GeneratedCv {
       linkedin: json['linkedin']?.toString(),
       location: json['location']?.toString(),
       targetJobTitle: json['target_job_title']?.toString() ?? '',
+      jobDescriptionInput: json['job_description_input']?.toString(),
       language: json['language']?.toString() ?? 'ar',
+      summaryInput: json['summary_input']?.toString(),
+      skillsInput: json['skills_input']?.toString() ?? '',
+      experienceInput: json['experience_input']?.toString() ?? '',
+      educationInput: json['education_input']?.toString() ?? '',
+      certificationsInput: json['certifications_input']?.toString(),
       generatedMarkdown: json['generated_markdown']?.toString() ?? '',
       aiStatus: json['ai_status']?.toString() ?? 'not_configured',
       aiOutput: json['ai_output'] is Map<String, dynamic>

@@ -3,9 +3,12 @@ import 'package:http/http.dart' as http;
 import '../models/cv_analysis.dart';
 import '../models/generated_cv.dart';
 import 'api_client.dart';
+import 'auth_token_store.dart';
 
 class CvApiService {
-  CvApiService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  CvApiService({ApiClient? apiClient})
+      : _apiClient = apiClient ??
+            ApiClient(tokenProvider: const AuthTokenStore().readToken);
 
   final ApiClient _apiClient;
 
@@ -42,6 +45,36 @@ class CvApiService {
   Future<GeneratedCv> generateCv(Map<String, dynamic> payload) async {
     final response = await _apiClient.postJson('/generated-cvs', payload);
     return GeneratedCv.fromJson(response['data'] as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> enhanceJobDescription({
+    required String targetJobTitle,
+    required String jobDescription,
+    required String language,
+  }) async {
+    final response = await _apiClient.postJson(
+      '/generated-cvs/enhance-job-description',
+      {
+        'target_job_title': targetJobTitle,
+        'job_description': jobDescription,
+        'language': language,
+      },
+    );
+
+    final data = response['data'];
+    return data is Map<String, dynamic> ? data : const {};
+  }
+
+  Future<GeneratedCv> updateGeneratedCv(
+    int id,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _apiClient.putJson('/generated-cvs/$id', payload);
+    return GeneratedCv.fromJson(response['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> deleteGeneratedCv(int id) async {
+    await _apiClient.deleteJson('/generated-cvs/$id');
   }
 
   Future<GeneratedCv> generateCvFromAnalysis({

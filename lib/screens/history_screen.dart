@@ -158,7 +158,7 @@ class _AnalysisList extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.manage_search,
+                    const Icon(Icons.manage_search,
                         size: 18, color: AppColors.primary),
                     const SizedBox(width: 8),
                     Expanded(
@@ -305,7 +305,7 @@ class _GeneratedCvList extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: .1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(cv.grade,
@@ -387,7 +387,7 @@ class _MetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: .1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(label,

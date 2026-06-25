@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import '../services/api_exception.dart';
+import '../services/auth_api_service.dart';
 import '../theme/app_theme.dart';
+import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
@@ -14,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthApiService();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -28,91 +32,86 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
-    // TODO: replace with real API call
-    // final response = await http.post(
-    //   Uri.parse('https://your-api.com/api/login'),
-    //   body: {'email': _emailController.text, 'password': _passwordController.text},
-    // );
-    // if (response.statusCode == 200) { ... save token ... }
+    try {
+      await _authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-
-    if (mounted) {
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+    } on ApiException catch (exception) {
+      if (mounted) _showError(exception.displayMessage);
+    } catch (_) {
+      if (mounted) _showError('حدث خطأ غير متوقع أثناء تسجيل الدخول.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _loginWithGoogle() async {
-    // TODO: implement Google Sign-In
+    _showError('تسجيل الدخول عبر Google غير مفعّل حالياً.');
   }
 
   Future<void> _loginWithApple() async {
-    // TODO: implement Apple Sign-In
+    _showError('تسجيل الدخول عبر Apple غير مفعّل حالياً.');
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(message, textAlign: TextAlign.right),
+          behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // ── Header ──────────────────────────────────────
           Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [Color(0xFF185FA5), Color(0xFF0C447C)],
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(
+                bottom:
+                    BorderSide(color: AppColors.border.withValues(alpha: .5)),
               ),
             ),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 24,
-              right: 24,
-              left: 24,
-              bottom: 32,
+              right: 20,
+              left: 20,
+              bottom: 24,
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.description_outlined,
-                      size: 30, color: Colors.white),
-                ),
-                const SizedBox(height: 14),
-                const Text(
+                SiratiMark(size: 56, elevated: true),
+                SizedBox(height: 14),
+                Text(
                   'مرحباً بك في سيرتي',
                   style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white),
+                      color: AppColors.primary),
                 ),
-                const SizedBox(height: 6),
-                const Text(
+                SizedBox(height: 6),
+                Text(
                   'سجّل دخولك للمتابعة',
-                  style: TextStyle(fontSize: 14, color: Colors.white70),
+                  style:
+                      TextStyle(fontSize: 14, color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
-
-          // ── Form ─────────────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -128,10 +127,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty)
+                        if (v == null || v.trim().isEmpty) {
                           return 'يرجى إدخال البريد الإلكتروني';
-                        if (!v.contains('@'))
+                        }
+                        if (!v.contains('@')) {
                           return 'البريد الإلكتروني غير صحيح';
+                        }
                         return null;
                       },
                     ),
@@ -151,10 +152,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty)
+                        if (v == null || v.isEmpty) {
                           return 'يرجى إدخال كلمة المرور';
-                        if (v.length < 6)
+                        }
+                        if (v.length < 6) {
                           return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+                        }
                         return null;
                       },
                     ),
@@ -162,9 +165,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: TextButton(
-                        onPressed: () {
-                          // TODO: navigate to forgot password
-                        },
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen()),
+                        ),
                         child: const Text('نسيت كلمة المرور؟'),
                       ),
                     ),
@@ -181,25 +185,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           : const Text('تسجيل الدخول'),
                     ),
                     const SizedBox(height: 24),
-
-                    // ── Divider ──
-                    Row(
+                    const Row(
                       children: [
-                        const Expanded(child: Divider(color: AppColors.border)),
+                        Expanded(child: Divider(color: AppColors.border)),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: EdgeInsets.symmetric(horizontal: 14),
                           child: Text(
                             'أو تابع بـ',
                             style: TextStyle(
                                 fontSize: 13, color: AppColors.textSecondary),
                           ),
                         ),
-                        const Expanded(child: Divider(color: AppColors.border)),
+                        Expanded(child: Divider(color: AppColors.border)),
                       ],
                     ),
                     const SizedBox(height: 20),
-
-                    // ── Social buttons ──
                     Row(
                       children: [
                         Expanded(
@@ -220,8 +220,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     const SizedBox(height: 28),
-
-                    // ── Register link ──
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -232,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: const Text('أنشئ حساباً'),
                         ),
-                        Text(
+                        const Text(
                           'ليس لديك حساب؟',
                           style: TextStyle(
                               fontSize: 14, color: AppColors.textSecondary),
@@ -266,9 +264,9 @@ class _SocialButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: AppColors.border.withValues(alpha: .7)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

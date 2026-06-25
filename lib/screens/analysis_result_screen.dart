@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import '../app_locale.dart';
 import '../models/cv_analysis.dart';
 import '../services/api_exception.dart';
 import '../services/cv_api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/language_toggle.dart';
 import 'generated_cv_screen.dart';
 
 class AnalysisResultScreen extends StatefulWidget {
@@ -41,6 +44,46 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     }
   }
 
+  void _shareAnalysis(bool english) {
+    final analysis = widget.analysis;
+    Share.share(_shareText(analysis, english));
+  }
+
+  String _shareText(CvAnalysis analysis, bool english) {
+    final foundKeywords = analysis.keywordsFound.take(8).join(', ');
+    final missingKeywords = analysis.keywordsMissing.take(8).join(', ');
+    final strengths =
+        analysis.strengths.take(3).map((item) => '- $item').join('\n');
+    final quickWins =
+        analysis.quickWins.take(3).map((item) => '- $item').join('\n');
+
+    if (english) {
+      return [
+        'Sirati CV Analysis',
+        '',
+        'Target role: ${analysis.targetJobTitle}',
+        'ATS score: ${analysis.scoreTotal}/100 (${analysis.grade})',
+        'Job match: ${analysis.jobMatch}%',
+        if (foundKeywords.isNotEmpty) 'Keywords found: $foundKeywords',
+        if (missingKeywords.isNotEmpty) 'Missing keywords: $missingKeywords',
+        if (strengths.isNotEmpty) ...['', 'Strengths:', strengths],
+        if (quickWins.isNotEmpty) ...['', 'Quick wins:', quickWins],
+      ].join('\n');
+    }
+
+    return [
+      'تحليل السيرة من سيرتي',
+      '',
+      'الوظيفة المستهدفة: ${analysis.targetJobTitle}',
+      'درجة ATS: ${analysis.scoreTotal}/100 (${analysis.grade})',
+      'نسبة التطابق: ${analysis.jobMatch}%',
+      if (foundKeywords.isNotEmpty) 'الكلمات الموجودة: $foundKeywords',
+      if (missingKeywords.isNotEmpty) 'الكلمات الناقصة: $missingKeywords',
+      if (strengths.isNotEmpty) ...['', 'نقاط القوة:', strengths],
+      if (quickWins.isNotEmpty) ...['', 'تحسينات سريعة:', quickWins],
+    ].join('\n');
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -63,35 +106,49 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     return AppColors.redLight;
   }
 
-  String _gradeDesc(int s) {
-    if (s >= 80) return 'ممتاز — سيرتك قوية ومؤهلة';
-    if (s >= 65) return 'جيد جداً — مع بعض التحسينات';
-    if (s >= 50) return 'مقبول — يحتاج مراجعة';
-    return 'ضعيف — يحتاج إعادة هيكلة';
+  String _gradeDesc(int s, bool english) {
+    if (s >= 80) {
+      return english
+          ? 'Excellent - your CV is strong and ready'
+          : 'ممتاز - سيرتك قوية ومؤهلة';
+    }
+    if (s >= 65) {
+      return english
+          ? 'Very good - a few improvements will help'
+          : 'جيد جداً - مع بعض التحسينات';
+    }
+    if (s >= 50) {
+      return english
+          ? 'Fair - review and polish needed'
+          : 'مقبول - يحتاج مراجعة';
+    }
+    return english ? 'Weak - needs restructuring' : 'ضعيف - يحتاج إعادة هيكلة';
   }
 
   @override
   Widget build(BuildContext context) {
     final analysis = widget.analysis;
+    final english = AppLocale.isEnglish(context);
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: AppLocale.direction(context),
       child: DefaultTabController(
         length: 2,
         child: Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: const Text('نتائج التحليل'),
+            title: Text(english ? 'Analysis Results' : 'نتائج التحليل'),
             actions: [
+              const LanguageToggle(),
               IconButton(
                 icon: const Icon(Icons.share_outlined),
-                onPressed: () {},
+                onPressed: () => _shareAnalysis(english),
               ),
             ],
-            bottom: const TabBar(
+            bottom: TabBar(
               tabs: [
-                Tab(text: 'الدرجة والمعايير'),
-                Tab(text: 'التوصيات'),
+                Tab(text: english ? 'Score & Criteria' : 'الدرجة والمعايير'),
+                Tab(text: english ? 'Recommendations' : 'التوصيات'),
               ],
             ),
           ),
@@ -107,13 +164,15 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 keywordsMissing: analysis.keywordsMissing,
                 scoreColor: _scoreColor(analysis.scoreTotal),
                 scoreTrack: _scoreTrack(analysis.scoreTotal),
-                gradeDesc: _gradeDesc(analysis.scoreTotal),
+                gradeDesc: _gradeDesc(analysis.scoreTotal, english),
+                english: english,
               ),
               _RecommendationsTab(
                 strengths: analysis.strengths,
                 quickWins: analysis.quickWins,
                 isGenerating: _isGenerating,
                 onGenerateCv: _generateImprovedCv,
+                english: english,
               ),
             ],
           ),
@@ -136,6 +195,7 @@ class _ScoreTab extends StatelessWidget {
   final Color scoreColor;
   final Color scoreTrack;
   final String gradeDesc;
+  final bool english;
 
   const _ScoreTab({
     required this.score,
@@ -148,6 +208,7 @@ class _ScoreTab extends StatelessWidget {
     required this.scoreColor,
     required this.scoreTrack,
     required this.gradeDesc,
+    required this.english,
   });
 
   @override
@@ -217,7 +278,7 @@ class _ScoreTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  'تقدير  $grade',
+                  english ? 'Grade  $grade' : 'تقدير  $grade',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -293,7 +354,7 @@ class _ScoreTab extends StatelessWidget {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
-                  'نسبة التطابق مع الوظيفة',
+                  english ? 'Job match percentage' : 'نسبة التطابق مع الوظيفة',
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.textHint,
@@ -307,7 +368,7 @@ class _ScoreTab extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ── Criteria ────────────────────────────────────────────────────────
-        const SectionTitle('تفاصيل المعايير'),
+        SectionTitle(english ? 'Criteria Details' : 'تفاصيل المعايير'),
         const SizedBox(height: 12),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -355,7 +416,7 @@ class _ScoreTab extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: barColor.withOpacity(0.12),
+                                color: barColor.withValues(alpha: .12),
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
@@ -392,7 +453,7 @@ class _ScoreTab extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ── Keywords ────────────────────────────────────────────────────────
-        const SectionTitle('الكلمات المفتاحية'),
+        SectionTitle(english ? 'Keywords' : 'الكلمات المفتاحية'),
         const SizedBox(height: 12),
         AppCard(
           padding: const EdgeInsets.all(16),
@@ -412,7 +473,9 @@ class _ScoreTab extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'موجودة  (${keywordsFound.length})',
+                    english
+                        ? 'Found  (${keywordsFound.length})'
+                        : 'موجودة  (${keywordsFound.length})',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -445,7 +508,9 @@ class _ScoreTab extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'ناقصة  (${keywordsMissing.length})',
+                    english
+                        ? 'Missing  (${keywordsMissing.length})'
+                        : 'ناقصة  (${keywordsMissing.length})',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -477,12 +542,14 @@ class _RecommendationsTab extends StatelessWidget {
   final List<String> quickWins;
   final bool isGenerating;
   final VoidCallback onGenerateCv;
+  final bool english;
 
   const _RecommendationsTab({
     required this.strengths,
     required this.quickWins,
     required this.isGenerating,
     required this.onGenerateCv,
+    required this.english,
   });
 
   @override
@@ -491,20 +558,23 @@ class _RecommendationsTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
       children: [
         // ── Strengths ────────────────────────────────────────────────────────
-        const _SectionHeader(
+        _SectionHeader(
           icon: Icons.thumb_up_alt_rounded,
           iconColor: AppColors.tealDark,
           iconBg: AppColors.tealLight,
-          label: 'نقاط القوة',
+          label: english ? 'Strengths' : 'نقاط القوة',
         ),
         const SizedBox(height: 12),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: strengths.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Text('لا توجد نقاط قوة متاحة حالياً',
-                      style: TextStyle(
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Text(
+                      english
+                          ? 'No strengths are available yet.'
+                          : 'لا توجد نقاط قوة متاحة حالياً',
+                      style: const TextStyle(
                           fontSize: 13, color: AppColors.textSecondary)),
                 )
               : Column(
@@ -554,20 +624,23 @@ class _RecommendationsTab extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ── Quick Wins ────────────────────────────────────────────────────────
-        const _SectionHeader(
+        _SectionHeader(
           icon: Icons.bolt_rounded,
           iconColor: AppColors.amber,
           iconBg: AppColors.amberLight,
-          label: 'تحسينات سريعة',
+          label: english ? 'Quick Wins' : 'تحسينات سريعة',
         ),
         const SizedBox(height: 12),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: quickWins.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Text('لا توجد تحسينات سريعة متاحة حالياً',
-                      style: TextStyle(
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Text(
+                      english
+                          ? 'No quick wins are available yet.'
+                          : 'لا توجد تحسينات سريعة متاحة حالياً',
+                      style: const TextStyle(
                           fontSize: 13, color: AppColors.textSecondary)),
                 )
               : Column(
@@ -634,7 +707,7 @@ class _RecommendationsTab extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.10),
+                  color: AppColors.primary.withValues(alpha: .10),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -644,22 +717,28 @@ class _RecommendationsTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: english
+                      ? CrossAxisAlignment.start
+                      : CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'جاهز لترقية سيرتك؟',
-                      style: TextStyle(
+                      english
+                          ? 'Ready to upgrade your CV?'
+                          : 'جاهز لترقية سيرتك؟',
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primaryDark,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'سنولّد لك سيرة ذاتية محسّنة تلقائياً بناءً على نتائج هذا التحليل',
-                      style: TextStyle(
+                      english
+                          ? 'We will generate an improved CV from this analysis.'
+                          : 'سنولّد لك سيرة ذاتية محسّنة تلقائياً بناءً على نتائج هذا التحليل',
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.primary,
                         height: 1.5,
@@ -681,7 +760,9 @@ class _RecommendationsTab extends StatelessWidget {
                   child: CircularProgressIndicator(
                       color: Colors.white, strokeWidth: 2.4))
               : const Icon(Icons.auto_awesome_rounded, size: 18),
-          label: Text(isGenerating ? 'جارٍ التوليد...' : 'توليد سيرة محسّنة'),
+          label: Text(isGenerating
+              ? (english ? 'Generating...' : 'جارٍ التوليد...')
+              : (english ? 'Generate Improved CV' : 'توليد سيرة محسّنة')),
         ),
       ],
     );
@@ -744,8 +825,8 @@ class _KeywordChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: found
-              ? AppColors.tealDark.withOpacity(0.18)
-              : AppColors.red.withOpacity(0.18),
+              ? AppColors.tealDark.withValues(alpha: .18)
+              : AppColors.red.withValues(alpha: .18),
         ),
       ),
       child: Text(
