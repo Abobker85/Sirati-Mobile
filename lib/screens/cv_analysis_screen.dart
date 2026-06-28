@@ -129,6 +129,7 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> {
                   TextFormField(
                     controller: _jobTitleController,
                     textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.right,
                     decoration: const InputDecoration(
                       hintText: 'مثال: Laravel Backend Developer',
                       prefixIcon: Icon(Icons.work_outline_rounded),
@@ -269,6 +270,7 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> {
                   TextFormField(
                     controller: _resumeTextController,
                     textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.right,
                     maxLines: 8,
                     decoration: const InputDecoration(
                       hintText: 'الصق نص السيرة الذاتية كاملاً هنا...',

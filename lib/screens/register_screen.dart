@@ -480,6 +480,7 @@ class _SignupField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             label,
+            textDirection: Directionality.of(context),
             textAlign: Directionality.of(context) == TextDirection.ltr
                 ? TextAlign.left
                 : TextAlign.right,
@@ -501,6 +502,7 @@ class _SignupField extends StatelessWidget {
             border: Border.all(color: const Color(0xFFE0E0E0)),
           ),
           child: Row(
+            textDirection: Directionality.of(context),
             children: [
               Icon(icon, color: AppColors.textHint, size: 22),
               const SizedBox(width: 12),

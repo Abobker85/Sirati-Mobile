@@ -69,6 +69,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const rtlLabelStyle =
+        TextStyle(color: AppColors.textSecondary, fontSize: 14);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -124,6 +127,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.right,
                       decoration: const InputDecoration(
                         labelText: 'البريد الإلكتروني',
+                        floatingLabelAlignment: FloatingLabelAlignment.start,
+                        labelStyle: rtlLabelStyle,
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       validator: (v) {
@@ -142,6 +147,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'كلمة المرور',
+                        floatingLabelAlignment: FloatingLabelAlignment.start,
+                        labelStyle: rtlLabelStyle,
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(_obscurePassword

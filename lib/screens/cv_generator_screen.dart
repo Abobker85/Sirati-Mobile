@@ -469,6 +469,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
         Text(label,
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -485,6 +487,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
         Text(english ? 'Personal Information' : 'المعلومات الشخصية',
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
@@ -567,8 +571,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.assignment_outlined),
                     hintText: english
-                        ? 'Paste the job description or let AI complete it from the role...'
-                        : 'الصق الوصف الوظيفي أو دع الذكاء الاصطناعي يكمله من المسمى...',
+                        ? 'Paste the job description or let Sirati complete it from the role...'
+                        : 'الصق الوصف الوظيفي أو دع سيرتي يكمله من المسمى...',
                     alignLabelWithHint: true,
                   ),
                 ),
@@ -584,14 +588,15 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.auto_fix_high_rounded, size: 18),
-                  label: Text(
-                      english ? 'Enhance with AI' : 'تحسين بالذكاء الاصطناعي'),
+                  label: Text(english ? 'Enhance' : 'تحسين'),
                 ),
               ],
             ),
             english),
         const SizedBox(height: 18),
         Text(english ? 'CV Language' : 'لغة السيرة الذاتية',
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -630,6 +635,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
         Text(english ? 'Skills & Summary' : 'المهارات والملخص',
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
@@ -639,6 +646,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
             english
                 ? 'Enter skills separated by commas'
                 : 'أدخل مهاراتك مفصولة بفاصلة',
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style:
                 const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
         const SizedBox(height: 18),
@@ -683,6 +692,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
         Text(english ? 'Work Experience' : 'الخبرات العملية',
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
@@ -692,6 +703,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
             english
                 ? 'Include title, company, dates, and measurable achievements'
                 : 'اذكر المسمى، الشركة، التاريخ، والإنجازات بأرقام',
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style:
                 const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
         const SizedBox(height: 18),
@@ -738,6 +751,8 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
         Text(english ? 'Education & Certifications' : 'التعليم والشهادات',
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,

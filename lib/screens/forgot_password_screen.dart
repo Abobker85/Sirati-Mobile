@@ -90,8 +90,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textDirection: TextDirection.ltr,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             decoration: InputDecoration(
               labelText: english ? 'Email Address' : 'البريد الإلكتروني',
+              floatingLabelAlignment: english
+                  ? FloatingLabelAlignment.start
+                  : FloatingLabelAlignment.start,
+              labelStyle: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
               prefixIcon: const Icon(Icons.email_outlined),
             ),
           ),
