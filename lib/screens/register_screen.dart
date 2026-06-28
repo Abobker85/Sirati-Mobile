@@ -136,6 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _RegisterHero(english: en),
                         const SizedBox(height: 30),
                         _SignupField(
+                          english: en,
                           label: en ? 'Username' : 'الاسم الكامل',
                           icon: Icons.person_outline_rounded,
                           child: TextFormField(
@@ -155,13 +156,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 16),
                         _SignupField(
+                          english: en,
                           label: en ? 'Email Address' : 'البريد الإلكتروني',
                           icon: Icons.mail_outline_rounded,
                           child: TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textDirection: TextDirection.ltr,
-                            textAlign: TextAlign.left,
+                            textAlign: en ? TextAlign.left : TextAlign.right,
                             decoration: _fieldDecoration('name@example.com'),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
@@ -182,6 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 16),
                         _SignupField(
+                          english: en,
                           label: en ? 'Password' : 'كلمة المرور',
                           icon: Icons.lock_outline_rounded,
                           trailing: IconButton(
@@ -222,6 +225,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 16),
                         _SignupField(
+                          english: en,
                           label: en ? 'Confirm Password' : 'تأكيد كلمة المرور',
                           icon: Icons.lock_reset_rounded,
                           trailing: IconButton(
@@ -460,11 +464,13 @@ class _RoundIconButton extends StatelessWidget {
 
 class _SignupField extends StatelessWidget {
   final String label;
+  final bool english;
   final IconData icon;
   final Widget child;
   final Widget? trailing;
 
   const _SignupField({
+    required this.english,
     required this.label,
     required this.icon,
     required this.child,
@@ -480,10 +486,8 @@ class _SignupField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             label,
-            textDirection: Directionality.of(context),
-            textAlign: Directionality.of(context) == TextDirection.ltr
-                ? TextAlign.left
-                : TextAlign.right,
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+            textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
               fontSize: 12,
               height: 1.35,
@@ -502,7 +506,7 @@ class _SignupField extends StatelessWidget {
             border: Border.all(color: const Color(0xFFE0E0E0)),
           ),
           child: Row(
-            textDirection: Directionality.of(context),
+            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
             children: [
               Icon(icon, color: AppColors.textHint, size: 22),
               const SizedBox(width: 12),

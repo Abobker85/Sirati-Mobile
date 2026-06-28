@@ -468,13 +468,16 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
       crossAxisAlignment:
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        Text(label,
-            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-            textAlign: english ? TextAlign.left : TextAlign.right,
-            style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary)),
+        SizedBox(
+          width: double.infinity,
+          child: Text(label,
+              textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: english ? TextAlign.left : TextAlign.right,
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary)),
+        ),
         const SizedBox(height: 6),
         field,
       ],
@@ -486,13 +489,10 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
       crossAxisAlignment:
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        Text(english ? 'Personal Information' : 'المعلومات الشخصية',
-            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-            textAlign: english ? TextAlign.left : TextAlign.right,
-            style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark)),
+        _SectionHeading(
+          text: english ? 'Personal Information' : 'المعلومات الشخصية',
+          english: english,
+        ),
         const SizedBox(height: 18),
         _fieldGroup(
             english ? 'Full Name *' : 'الاسم الكامل *',
@@ -594,13 +594,10 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
             ),
             english),
         const SizedBox(height: 18),
-        Text(english ? 'CV Language' : 'لغة السيرة الذاتية',
-            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-            textAlign: english ? TextAlign.left : TextAlign.right,
-            style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary)),
+        _FieldLabel(
+          text: english ? 'CV Language' : 'لغة السيرة الذاتية',
+          english: english,
+        ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
@@ -634,22 +631,17 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
       crossAxisAlignment:
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        Text(english ? 'Skills & Summary' : 'المهارات والملخص',
-            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-            textAlign: english ? TextAlign.left : TextAlign.right,
-            style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark)),
+        _SectionHeading(
+          text: english ? 'Skills & Summary' : 'المهارات والملخص',
+          english: english,
+        ),
         const SizedBox(height: 6),
-        Text(
-            english
-                ? 'Enter skills separated by commas'
-                : 'أدخل مهاراتك مفصولة بفاصلة',
-            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-            textAlign: english ? TextAlign.left : TextAlign.right,
-            style:
-                const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+        _HelperText(
+          text: english
+              ? 'Enter skills separated by commas'
+              : 'أدخل مهاراتك مفصولة بفاصلة',
+          english: english,
+        ),
         const SizedBox(height: 18),
         _fieldGroup(
             english ? 'Core Skills *' : 'المهارات الأساسية *',
@@ -691,22 +683,17 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
       crossAxisAlignment:
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        Text(english ? 'Work Experience' : 'الخبرات العملية',
-            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-            textAlign: english ? TextAlign.left : TextAlign.right,
-            style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark)),
+        _SectionHeading(
+          text: english ? 'Work Experience' : 'الخبرات العملية',
+          english: english,
+        ),
         const SizedBox(height: 6),
-        Text(
-            english
-                ? 'Include title, company, dates, and measurable achievements'
-                : 'اذكر المسمى، الشركة، التاريخ، والإنجازات بأرقام',
-            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-            textAlign: english ? TextAlign.left : TextAlign.right,
-            style:
-                const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+        _HelperText(
+          text: english
+              ? 'Include title, company, dates, and measurable achievements'
+              : 'اذكر المسمى، الشركة، التاريخ، والإنجازات بأرقام',
+          english: english,
+        ),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(12),
@@ -722,7 +709,7 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
                           : 'كلما ذكرت أرقاماً (35%، 20 مستخدم)، زادت درجة ATS',
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.primaryDark),
-                      textAlign: TextAlign.right)),
+                      textAlign: english ? TextAlign.left : TextAlign.right)),
               const SizedBox(width: 8),
               const Icon(Icons.tips_and_updates_outlined,
                   color: AppColors.primary, size: 20),
@@ -750,13 +737,10 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
       crossAxisAlignment:
           english ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        Text(english ? 'Education & Certifications' : 'التعليم والشهادات',
-            textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-            textAlign: english ? TextAlign.left : TextAlign.right,
-            style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark)),
+        _SectionHeading(
+          text: english ? 'Education & Certifications' : 'التعليم والشهادات',
+          english: english,
+        ),
         const SizedBox(height: 18),
         _fieldGroup(
             english ? 'Education *' : 'التعليم *',
@@ -789,6 +773,72 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
             ),
             english),
       ],
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  final String text;
+  final bool english;
+
+  const _SectionHeading({required this.text, required this.english});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Text(
+        text,
+        textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+        textAlign: english ? TextAlign.left : TextAlign.right,
+        style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primaryDark),
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  final String text;
+  final bool english;
+
+  const _FieldLabel({required this.text, required this.english});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Text(
+        text,
+        textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+        textAlign: english ? TextAlign.left : TextAlign.right,
+        style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary),
+      ),
+    );
+  }
+}
+
+class _HelperText extends StatelessWidget {
+  final String text;
+  final bool english;
+
+  const _HelperText({required this.text, required this.english});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Text(
+        text,
+        textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+        textAlign: english ? TextAlign.left : TextAlign.right,
+        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+      ),
     );
   }
 }

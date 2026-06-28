@@ -86,21 +86,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ),
           const SizedBox(height: 22),
+          _ResetLabel(
+            text: english ? 'Email Address' : 'البريد الإلكتروني',
+            english: english,
+          ),
+          const SizedBox(height: 6),
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textDirection: TextDirection.ltr,
             textAlign: english ? TextAlign.left : TextAlign.right,
-            decoration: InputDecoration(
-              labelText: english ? 'Email Address' : 'البريد الإلكتروني',
-              floatingLabelAlignment: english
-                  ? FloatingLabelAlignment.start
-                  : FloatingLabelAlignment.start,
-              labelStyle: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
-              prefixIcon: const Icon(Icons.email_outlined),
+            decoration: const InputDecoration(
+              hintText: 'name@example.com',
+              prefixIcon: Icon(Icons.email_outlined),
             ),
           ),
           const SizedBox(height: 18),
@@ -139,6 +137,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _ResetLabel extends StatelessWidget {
+  final String text;
+  final bool english;
+
+  const _ResetLabel({required this.text, required this.english});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Text(
+        text,
+        textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+        textAlign: english ? TextAlign.left : TextAlign.right,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textSecondary,
+        ),
       ),
     );
   }

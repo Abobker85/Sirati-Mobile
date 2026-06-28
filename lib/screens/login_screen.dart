@@ -69,9 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const rtlLabelStyle =
-        TextStyle(color: AppColors.textSecondary, fontSize: 14);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -120,15 +117,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const _AuthLabel(text: 'البريد الإلكتروني'),
+                    const SizedBox(height: 6),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textDirection: TextDirection.ltr,
                       textAlign: TextAlign.right,
                       decoration: const InputDecoration(
-                        labelText: 'البريد الإلكتروني',
-                        floatingLabelAlignment: FloatingLabelAlignment.start,
-                        labelStyle: rtlLabelStyle,
+                        hintText: 'name@example.com',
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       validator: (v) {
@@ -142,13 +139,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 14),
+                    const _AuthLabel(text: 'كلمة المرور'),
+                    const SizedBox(height: 6),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
-                        labelText: 'كلمة المرور',
-                        floatingLabelAlignment: FloatingLabelAlignment.start,
-                        labelStyle: rtlLabelStyle,
+                        hintText: '••••••••',
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(_obscurePassword
@@ -250,6 +247,29 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AuthLabel extends StatelessWidget {
+  final String text;
+
+  const _AuthLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Text(
+        text,
+        textDirection: TextDirection.rtl,
+        textAlign: TextAlign.right,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textSecondary,
+        ),
       ),
     );
   }
