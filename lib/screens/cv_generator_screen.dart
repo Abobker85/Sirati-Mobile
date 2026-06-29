@@ -5,6 +5,7 @@ import '../services/cv_api_service.dart';
 import '../app_locale.dart';
 import '../models/generated_cv.dart';
 import '../widgets/language_toggle.dart';
+import '../widgets/motion.dart';
 import 'generated_cv_screen.dart';
 
 class CvGeneratorScreen extends StatefulWidget {
@@ -398,64 +399,96 @@ class _CvGeneratorScreenState extends State<CvGeneratorScreen> {
 
           // ── Step content ──
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-              children: [
-                if (_step == 0) _buildStep0(english),
-                if (_step == 1) _buildStep1(english),
-                if (_step == 2) _buildStep2(english),
-                if (_step == 3) _buildStep3(english),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    if (_step > 0) ...[
+            child: AnimatedSwitcher(
+              duration: MotionSettings.reduce(context)
+                  ? Duration.zero
+                  : MotionDurations.slow,
+              switchInCurve: MotionCurves.enter,
+              switchOutCurve: MotionCurves.exit,
+              transitionBuilder: (child, animation) {
+                if (MotionSettings.reduce(context)) return child;
+                final curved = CurvedAnimation(
+                  parent: animation,
+                  curve: MotionCurves.enter,
+                  reverseCurve: MotionCurves.exit,
+                );
+
+                return FadeTransition(
+                  opacity: curved,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(.04, 0),
+                      end: Offset.zero,
+                    ).animate(curved),
+                    child: child,
+                  ),
+                );
+              },
+              child: ListView(
+                key: ValueKey('cv-step-$_step'),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                children: [
+                  if (_step == 0) _buildStep0(english),
+                  if (_step == 1) _buildStep1(english),
+                  if (_step == 2) _buildStep2(english),
+                  if (_step == 3) _buildStep3(english),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      if (_step > 0) ...[
+                        Expanded(
+                          child: PressScale(
+                            child: OutlinedButton(
+                              onPressed: () => setState(() => _step--),
+                              child: Text(english ? 'Back' : 'السابق'),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => setState(() => _step--),
-                          child: Text(english ? 'Back' : 'السابق'),
+                        flex: 2,
+                        child: PressScale(
+                          enabled: !_isLoading,
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    if (!_validateCurrentStep()) return;
+
+                                    if (_step < _steps.length - 1) {
+                                      setState(() => _step++);
+                                    } else {
+                                      _submit();
+                                    }
+                                  },
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2.5))
+                                : Icon(
+                                    _step == _steps.length - 1
+                                        ? Icons.auto_awesome
+                                        : Icons.arrow_forward_ios_rounded,
+                                    size: 18),
+                            label: Text(_isLoading
+                                ? (english ? 'Generating...' : 'جارٍ التوليد...')
+                                : _step == _steps.length - 1
+                                    ? (_isEditMode
+                                        ? (english ? 'Update CV' : 'تحديث السيرة')
+                                        : (english
+                                            ? 'Generate CV'
+                                            : 'توليد السيرة'))
+                                    : (english ? 'Next' : 'التالي')),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
                     ],
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                                if (!_validateCurrentStep()) return;
-
-                                if (_step < _steps.length - 1) {
-                                  setState(() => _step++);
-                                } else {
-                                  _submit();
-                                }
-                              },
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2.5))
-                            : Icon(
-                                _step == _steps.length - 1
-                                    ? Icons.auto_awesome
-                                    : Icons.arrow_forward_ios_rounded,
-                                size: 18),
-                        label: Text(_isLoading
-                            ? (english ? 'Generating...' : 'جارٍ التوليد...')
-                            : _step == _steps.length - 1
-                                ? (_isEditMode
-                                    ? (english ? 'Update CV' : 'تحديث السيرة')
-                                    : (english
-                                        ? 'Generate CV'
-                                        : 'توليد السيرة'))
-                                : (english ? 'Next' : 'التالي')),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],

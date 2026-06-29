@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_locale.dart';
+import '../models/cv_template.dart';
 import '../services/api_exception.dart';
 import '../services/cv_api_service.dart';
 import '../services/mobile_content_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/language_toggle.dart';
+import '../widgets/motion.dart';
 import 'cv_generator_screen.dart';
 
 class MyCvsScreen extends StatefulWidget {
@@ -72,18 +74,25 @@ class _MyCvsScreenState extends State<MyCvsScreen> {
                 child: const _MyCvsAddButton(),
               ),
               const SizedBox(height: 18),
-              for (final item in items) ...[
-                _CvDocumentCard(
-                  id: _int(item['id']),
-                  title: _text(item['title'], ''),
-                  updatedAt: _text(item['updated_label'], ''),
-                  badge: _text(item['badge'], ''),
-                  isDraft: _bool(item['is_draft']),
-                  canDownload: _bool(item['can_download'], fallback: true),
-                  pdfUrl: _text(item['pdf_url'], ''),
-                  onEdit: () => _editCv(_int(item['id'])),
-                  onDelete: () => _deleteCv(_int(item['id'])),
-                  onDownload: () => _download(_text(item['pdf_url'], '')),
+              for (final entry in items.asMap().entries) ...[
+                MotionReveal(
+                  order: entry.key,
+                  child: _CvDocumentCard(
+                    id: _int(entry.value['id']),
+                    title: _text(entry.value['title'], ''),
+                    updatedAt: _text(entry.value['updated_label'], ''),
+                    badge: _text(entry.value['badge'], ''),
+                    isDraft: _bool(entry.value['is_draft']),
+                    canDownload: _bool(entry.value['can_download'], fallback: true),
+                    pdfUrl: _text(entry.value['pdf_url'], ''),
+                    templatePdfUrl: _text(entry.value['template_pdf_url'], ''),
+                    onEdit: () => _editCv(_int(entry.value['id'])),
+                    onDelete: () => _deleteCv(_int(entry.value['id'])),
+                    onDownload: () => _download(
+                      pdfUrl: _text(entry.value['pdf_url'], ''),
+                      templatePdfUrl: _text(entry.value['template_pdf_url'], ''),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 18),
               ],
@@ -139,16 +148,58 @@ class _MyCvsScreenState extends State<MyCvsScreen> {
     }
   }
 
-  Future<void> _download(String url) async {
+  Future<void> _download({required String pdfUrl, required String templatePdfUrl}) async {
+    final url = templatePdfUrl.isNotEmpty ? templatePdfUrl : pdfUrl;
     if (url.isEmpty) return;
+    final english = AppLocale.isEnglish(context);
+    final selection = templatePdfUrl.isNotEmpty
+        ? await _chooseTemplate(english)
+        : const _TemplateSelection.useDefault();
+    if (!mounted || !selection.shouldDownload) return;
+    final launchUrlText = _urlForTemplate(url, selection.template?.slug);
     final launched =
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        await launchUrl(Uri.parse(launchUrlText), mode: LaunchMode.externalApplication);
     if (!mounted) return;
     if (!launched) {
-      _message(AppLocale.isEnglish(context)
-          ? 'Could not open PDF.'
-          : 'تعذر فتح ملف PDF.');
+      _message(english ? 'Could not open PDF.' : 'تعذر فتح ملف PDF.');
     }
+  }
+
+  Future<_TemplateSelection> _chooseTemplate(bool english) async {
+    try {
+      final templates = await _cvService.listCvTemplates(english: english);
+      if (!mounted) return const _TemplateSelection.cancelled();
+      if (templates.isEmpty) return const _TemplateSelection.useDefault();
+
+      final selectedTemplate = await showModalBottomSheet<CvTemplate>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) => _CvTemplatePicker(
+          templates: templates,
+          english: english,
+        ),
+      );
+
+      if (selectedTemplate == null) return const _TemplateSelection.cancelled();
+      return _TemplateSelection(template: selectedTemplate);
+    } on ApiException catch (exception) {
+      _message(exception.displayMessage);
+      return const _TemplateSelection.useDefault();
+    } catch (_) {
+      _message(english
+          ? 'Could not load CV designs. Default design will be used.'
+          : 'تعذر تحميل التصاميم. سيتم استخدام التصميم الافتراضي.');
+      return const _TemplateSelection.useDefault();
+    }
+  }
+
+  String _urlForTemplate(String url, String? templateSlug) {
+    if (templateSlug == null || templateSlug.isEmpty) return url;
+    final uri = Uri.parse(url);
+    return uri.replace(queryParameters: {
+      ...uri.queryParameters,
+      'template': templateSlug,
+    }).toString();
   }
 
   void _message(String message) {
@@ -156,6 +207,19 @@ class _MyCvsScreenState extends State<MyCvsScreen> {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
   }
+}
+
+class _TemplateSelection {
+  final CvTemplate? template;
+  final bool shouldDownload;
+
+  const _TemplateSelection({this.template}) : shouldDownload = true;
+  const _TemplateSelection.useDefault()
+      : template = null,
+        shouldDownload = true;
+  const _TemplateSelection.cancelled()
+      : template = null,
+        shouldDownload = false;
 }
 
 Map<String, dynamic> _fallback(bool english) => {
@@ -257,6 +321,7 @@ class _CvDocumentCard extends StatelessWidget {
   final bool isDraft;
   final bool canDownload;
   final String pdfUrl;
+  final String templatePdfUrl;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onDownload;
@@ -269,6 +334,7 @@ class _CvDocumentCard extends StatelessWidget {
     required this.isDraft,
     required this.canDownload,
     required this.pdfUrl,
+    required this.templatePdfUrl,
     required this.onEdit,
     required this.onDelete,
     required this.onDownload,
@@ -279,16 +345,17 @@ class _CvDocumentCard extends StatelessWidget {
     final color = isDraft ? AppColors.textHint : AppColors.primary;
     final english = AppLocale.isEnglish(context);
 
-    return Container(
-      constraints: const BoxConstraints(minHeight: 156),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: AppColors.borderStrong.withValues(alpha: .45)),
-      ),
-      child: Column(
+    return PressScale(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 156),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border:
+              Border.all(color: AppColors.borderStrong.withValues(alpha: .45)),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
@@ -369,6 +436,93 @@ class _CvDocumentCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CvTemplatePicker extends StatelessWidget {
+  final List<CvTemplate> templates;
+  final bool english;
+
+  const _CvTemplatePicker({required this.templates, required this.english});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
+        shrinkWrap: true,
+        children: [
+          Text(
+            english ? 'Choose CV design' : 'اختر تصميم السيرة',
+            textAlign: english ? TextAlign.left : TextAlign.right,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (final template in templates)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                onTap: () => Navigator.pop(context, template),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+                leading: _TemplatePreview(template: template),
+                title: Text(
+                  template.name,
+                  textAlign: english ? TextAlign.left : TextAlign.right,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text(
+                  template.isDefault
+                      ? (english ? 'Default template' : 'القالب الافتراضي')
+                      : template.slug,
+                  textAlign: english ? TextAlign.left : TextAlign.right,
+                ),
+                trailing: const Icon(Icons.download_rounded),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TemplatePreview extends StatelessWidget {
+  final CvTemplate template;
+
+  const _TemplatePreview({required this.template});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = template.previewImageUrl;
+    if (url == null) {
+      return Container(
+        width: 44,
+        height: 56,
+        decoration: BoxDecoration(
+          color: AppColors.tealLight,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(Icons.description_outlined, color: AppColors.primary),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        url,
+        width: 44,
+        height: 56,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(Icons.description_outlined),
       ),
     );
   }

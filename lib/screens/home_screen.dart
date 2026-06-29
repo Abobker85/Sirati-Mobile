@@ -4,6 +4,7 @@ import '../app_locale.dart';
 import '../services/mobile_content_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/language_toggle.dart';
+import '../widgets/motion.dart';
 import 'cv_analysis_screen.dart';
 import 'cv_generator_screen.dart';
 import 'education_screen.dart';
@@ -35,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(index: _currentIndex, children: _tabs),
+      body: MotionTabStack(currentIndex: _currentIndex, children: _tabs),
       bottomNavigationBar: _DashboardNavigationBar(
         currentIndex: _currentIndex,
         onChanged: (index) => setState(() => _currentIndex = index),
@@ -69,71 +70,82 @@ class _DashboardTab extends StatelessWidget {
               ListView(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 104),
                 children: [
-                  _DashboardHeader(
-                    english: english,
-                    name: _string(profile['name'],
-                        fallback: english ? 'Mohammed' : 'محمد'),
-                    status: _string(profile['status'],
-                        fallback: english ? 'Pending Account' : 'حساب معلق'),
-                    unreadNotifications: _int(stats['unread_notifications']),
-                    onNotifications: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const NotificationsScreen()),
+                  MotionReveal(
+                    child: _DashboardHeader(
+                      english: english,
+                      name: _string(profile['name'],
+                          fallback: english ? 'Mohammed' : 'محمد'),
+                      status: _string(profile['status'],
+                          fallback: english ? 'Pending Account' : 'حساب معلق'),
+                      unreadNotifications: _int(stats['unread_notifications']),
+                      onNotifications: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const NotificationsScreen()),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _DashboardStatCard(
-                            label: english ? 'Analyses' : 'التحليلات',
-                            value: _countLabel(stats['analyses']),
-                            icon: Icons.analytics_outlined,
-                            english: english,
+                  MotionReveal(
+                    order: 1,
+                    child: Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _DashboardStatCard(
+                              label: english ? 'Analyses' : 'التحليلات',
+                              value: _countLabel(stats['analyses']),
+                              icon: Icons.analytics_outlined,
+                              english: english,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _DashboardStatCard(
-                            label: english ? 'My CVs' : 'السير الذاتية',
-                            value: _countLabel(stats['generated_cvs']),
-                            icon: Icons.description_outlined,
-                            english: english,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _DashboardStatCard(
+                              label: english ? 'My CVs' : 'السير الذاتية',
+                              value: _countLabel(stats['generated_cvs']),
+                              icon: Icons.description_outlined,
+                              english: english,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _DashboardActionCard(
-                    title: _string(primary['title']),
-                    subtitle: _string(primary['subtitle']),
-                    buttonLabel: _string(primary['button_label']),
-                    backgroundColor: AppColors.primary,
-                    buttonColor: AppColors.surface,
-                    buttonTextColor: AppColors.primary,
-                    icon: Icons.edit_document,
-                    watermark: Icons.description_outlined,
-                    onTap: () => _openCreateCv(context),
-                    english: english,
+                  MotionReveal(
+                    order: 2,
+                    child: _DashboardActionCard(
+                      title: _string(primary['title']),
+                      subtitle: _string(primary['subtitle']),
+                      buttonLabel: _string(primary['button_label']),
+                      backgroundColor: AppColors.primary,
+                      buttonColor: AppColors.surface,
+                      buttonTextColor: AppColors.primary,
+                      icon: Icons.edit_document,
+                      watermark: Icons.description_outlined,
+                      onTap: () => _openCreateCv(context),
+                      english: english,
+                    ),
                   ),
                   const SizedBox(height: 14),
-                  _DashboardActionCard(
-                    title: _string(analysis['title']),
-                    subtitle: _string(analysis['subtitle']),
-                    buttonLabel: _string(analysis['button_label']),
-                    backgroundColor: AppColors.amber,
-                    buttonColor: AppColors.amberLight,
-                    buttonTextColor: AppColors.textPrimary,
-                    icon: Icons.manage_search_outlined,
-                    watermark: Icons.search_rounded,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const CvAnalysisScreen()),
+                  MotionReveal(
+                    order: 3,
+                    child: _DashboardActionCard(
+                      title: _string(analysis['title']),
+                      subtitle: _string(analysis['subtitle']),
+                      buttonLabel: _string(analysis['button_label']),
+                      backgroundColor: AppColors.amber,
+                      buttonColor: AppColors.amberLight,
+                      buttonTextColor: AppColors.textPrimary,
+                      icon: Icons.manage_search_outlined,
+                      watermark: Icons.search_rounded,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const CvAnalysisScreen()),
+                      ),
+                      english: english,
                     ),
-                    english: english,
                   ),
                   const SizedBox(height: 22),
                   Align(
@@ -175,17 +187,23 @@ class _DashboardTab extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _NewsCard(
-                    title: _string(news['title']),
-                    subtitle: _string(news['subtitle']),
-                    english: english,
+                  MotionReveal(
+                    order: 4,
+                    child: _NewsCard(
+                      title: _string(news['title']),
+                      subtitle: _string(news['subtitle']),
+                      english: english,
+                    ),
                   ),
                 ],
               ),
               PositionedDirectional(
                 start: 24,
                 bottom: 18,
-                child: _AddButton(onTap: () => _openCreateCv(context)),
+                child: MotionReveal(
+                  order: 5,
+                  child: _AddButton(onTap: () => _openCreateCv(context)),
+                ),
               ),
             ],
           );
@@ -518,13 +536,14 @@ class _DashboardActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: backgroundColor,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
+    return PressScale(
+      child: Material(
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
           height: 280,
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
@@ -627,6 +646,7 @@ class _DashboardActionCard extends StatelessWidget {
               ),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -711,19 +731,22 @@ class _AddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.amberAccent,
-      borderRadius: BorderRadius.circular(14),
-      elevation: 10,
-      shadowColor: AppColors.amberAccent.withValues(alpha: .35),
-      child: InkWell(
-        onTap: onTap,
+    return PressScale(
+      pressedScale: .94,
+      child: Material(
+        color: AppColors.amberAccent,
         borderRadius: BorderRadius.circular(14),
-        child: const SizedBox(
-          width: 58,
-          height: 58,
-          child:
-              Icon(Icons.add_rounded, color: AppColors.textPrimary, size: 38),
+        elevation: 10,
+        shadowColor: AppColors.amberAccent.withValues(alpha: .35),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: const SizedBox(
+            width: 58,
+            height: 58,
+            child:
+                Icon(Icons.add_rounded, color: AppColors.textPrimary, size: 38),
+          ),
         ),
       ),
     );
@@ -824,10 +847,12 @@ class _NavigationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = selected ? AppColors.primary : AppColors.textHint;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: AnimatedContainer(
+    return PressScale(
+      pressedScale: .94,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: EdgeInsets.symmetric(
           horizontal: selected ? 16 : 4,
@@ -839,20 +864,21 @@ class _NavigationItem extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(data.icon, color: color, size: 25),
-            const SizedBox(height: 3),
-            Text(
-              english ? data.labelEn : data.labelAr,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
-                color: color,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(data.icon, color: color, size: 25),
+              const SizedBox(height: 3),
+              Text(
+                english ? data.labelEn : data.labelAr,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                  color: color,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

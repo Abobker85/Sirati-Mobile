@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 
 import '../models/cv_analysis.dart';
+import '../models/cv_template.dart';
 import '../models/generated_cv.dart';
 import 'api_client.dart';
 import 'auth_token_store.dart';
@@ -100,5 +101,32 @@ class CvApiService {
         .whereType<Map<String, dynamic>>()
         .map(GeneratedCv.fromJson)
         .toList();
+  }
+
+  Future<List<CvTemplate>> listCvTemplates({required bool english}) async {
+    final response = await _apiClient.getJson(
+      '/mobile/cv-templates?lang=${english ? 'en' : 'ar'}',
+    );
+    final data = response['data'];
+    final items = data is Map<String, dynamic> ? data['items'] : null;
+
+    return (items as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(CvTemplate.fromJson)
+        .where((template) => template.slug.isNotEmpty)
+        .toList();
+  }
+
+  String pdfUrlForTemplate(GeneratedCv cv, String? templateSlug) {
+    final templateBaseUrl = cv.templatePdfUrl ?? '';
+    if (templateSlug == null || templateSlug.isEmpty || templateBaseUrl.isEmpty) {
+      return templateBaseUrl.isNotEmpty ? templateBaseUrl : cv.pdfUrl ?? '';
+    }
+
+    final uri = Uri.parse(templateBaseUrl);
+    return uri.replace(queryParameters: {
+      ...uri.queryParameters,
+      'template': templateSlug,
+    }).toString();
   }
 }

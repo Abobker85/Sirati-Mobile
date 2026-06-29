@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_locale.dart';
+import '../models/job_news.dart';
 import '../services/mobile_content_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/language_toggle.dart';
+import '../widgets/motion.dart';
 
 class JobNewsScreen extends StatelessWidget {
   const JobNewsScreen({super.key});
@@ -18,7 +20,7 @@ class JobNewsScreen extends StatelessWidget {
         future: MobileContentService().jobNews(english),
         builder: (context, snapshot) {
           final data = snapshot.data ?? _fallback(english);
-          final items = _list(data['items']);
+          final items = _list(data['items']).map(JobNews.fromJson).toList();
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 112),
@@ -68,13 +70,16 @@ class JobNewsScreen extends StatelessWidget {
               if (items.isEmpty)
                 _EmptyNews(english: english)
               else
-                for (final item in items) ...[
-                  _JobNewsCard(
-                    item: item,
-                    english: english,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => JobNewsDetailScreen(item: item),
+                for (final entry in items.asMap().entries) ...[
+                  MotionReveal(
+                    order: entry.key,
+                    child: _JobNewsCard(
+                      item: entry.value,
+                      english: english,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => JobNewsDetailScreen(item: entry.value),
+                        ),
                       ),
                     ),
                   ),
@@ -89,14 +94,14 @@ class JobNewsScreen extends StatelessWidget {
 }
 
 class JobNewsDetailScreen extends StatelessWidget {
-  final Map<String, dynamic> item;
+  final JobNews item;
 
   const JobNewsDetailScreen({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
     final english = AppLocale.isEnglish(context);
-    final url = _text(item['url'], '');
+    final actionUrl = item.actionUrl;
 
     return Scaffold(
       appBar: AppBar(title: Text(english ? 'Job Details' : 'تفاصيل الخبر')),
@@ -104,7 +109,7 @@ class JobNewsDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         children: [
           Text(
-            _text(item['title'], ''),
+            item.title,
             textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
               fontSize: 25,
@@ -119,17 +124,19 @@ class JobNewsDetailScreen extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (_text(item['company'], '').isNotEmpty)
-                _MetaChip(text: _text(item['company'], '')),
-              if (_text(item['location'], '').isNotEmpty)
-                _MetaChip(text: _text(item['location'], '')),
-              if (_text(item['published_label'], '').isNotEmpty)
-                _MetaChip(text: _text(item['published_label'], '')),
+              if ((item.company ?? '').isNotEmpty)
+                _MetaChip(text: item.company!),
+              if ((item.location ?? '').isNotEmpty)
+                _MetaChip(text: item.location!),
+              if ((item.publishedLabel ?? '').isNotEmpty)
+                _MetaChip(text: item.publishedLabel!),
+              if ((item.validUntilLabel ?? '').isNotEmpty)
+                _MetaChip(text: item.validUntilLabel!, highlight: true),
             ],
           ),
           const SizedBox(height: 22),
           Text(
-            _text(item['body'], ''),
+            item.body,
             textAlign: english ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
               fontSize: 16,
@@ -137,13 +144,13 @@ class JobNewsDetailScreen extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
           ),
-          if (url.isNotEmpty) ...[
+          if (actionUrl != null) ...[
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => launchUrl(Uri.parse(url),
+              onPressed: () => launchUrl(Uri.parse(actionUrl),
                   mode: LaunchMode.externalApplication),
-              icon: const Icon(Icons.open_in_new_rounded),
-              label: Text(english ? 'Open Opportunity' : 'فتح الفرصة'),
+              icon: const Icon(Icons.send_rounded),
+              label: Text(english ? 'Apply Now' : 'تقدّم الآن'),
             ),
           ],
         ],
@@ -153,7 +160,7 @@ class JobNewsDetailScreen extends StatelessWidget {
 }
 
 class _JobNewsCard extends StatelessWidget {
-  final Map<String, dynamic> item;
+  final JobNews item;
   final bool english;
   final VoidCallback onTap;
 
@@ -165,13 +172,18 @@ class _JobNewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
+    final meta = [item.company ?? '', item.location ?? '']
+        .where((value) => value.isNotEmpty)
+        .join(' · ');
+
+    return PressScale(
+      child: Material(
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -185,7 +197,7 @@ class _JobNewsCard extends StatelessWidget {
                   color: AppColors.primary, size: 28),
               const SizedBox(height: 12),
               Text(
-                _text(item['title'], ''),
+                item.title,
                 textAlign: english ? TextAlign.left : TextAlign.right,
                 style: const TextStyle(
                   fontSize: 19,
@@ -194,18 +206,28 @@ class _JobNewsCard extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                [_text(item['company'], ''), _text(item['location'], '')]
-                    .where((value) => value.isNotEmpty)
-                    .join(' · '),
-                textAlign: english ? TextAlign.left : TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
+              if (meta.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  meta,
+                  textAlign: english ? TextAlign.left : TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
+              ],
+              if ((item.validUntilLabel ?? '').isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Align(
+                  alignment:
+                      english ? Alignment.centerLeft : Alignment.centerRight,
+                  child:
+                      _MetaChip(text: item.validUntilLabel!, highlight: true),
+                ),
+              ],
             ],
+          ),
           ),
         ),
       ),
@@ -215,12 +237,26 @@ class _JobNewsCard extends StatelessWidget {
 
 class _MetaChip extends StatelessWidget {
   final String text;
+  final bool highlight;
 
-  const _MetaChip({required this.text});
+  const _MetaChip({required this.text, this.highlight = false});
 
   @override
   Widget build(BuildContext context) {
-    return Chip(label: Text(text));
+    if (!highlight) {
+      return Chip(label: Text(text));
+    }
+    return Chip(
+      label: Text(
+        text,
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      backgroundColor: AppColors.primary.withValues(alpha: .08),
+      side: BorderSide(color: AppColors.primary.withValues(alpha: .25)),
+    );
   }
 }
 

@@ -23,6 +23,7 @@ class GeneratedCv {
   final String grade;
   final List<ScoreCriterion> criteria;
   final String? pdfUrl;
+  final String? templatePdfUrl;
   final DateTime? createdAt;
 
   const GeneratedCv({
@@ -48,6 +49,7 @@ class GeneratedCv {
     required this.grade,
     required this.criteria,
     required this.pdfUrl,
+    required this.templatePdfUrl,
     required this.createdAt,
   });
 
@@ -77,6 +79,7 @@ class GeneratedCv {
       grade: json['grade']?.toString() ?? '-',
       criteria: _asList(json['criteria']).map(ScoreCriterion.fromJson).toList(),
       pdfUrl: json['pdf_url']?.toString(),
+      templatePdfUrl: json['template_pdf_url']?.toString(),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
     );
   }

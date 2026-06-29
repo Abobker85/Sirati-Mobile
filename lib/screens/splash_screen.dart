@@ -4,6 +4,7 @@ import '../app_locale.dart';
 import '../services/auth_token_store.dart';
 import '../theme/app_theme.dart';
 import '../widgets/language_toggle.dart';
+import '../widgets/motion.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -83,67 +84,83 @@ class _SplashScreenState extends State<SplashScreen> {
                             child: LanguageToggle(),
                           ),
                           SizedBox(height: topGap),
-                          const Center(child: _SplashLogo()),
+                          const MotionReveal(
+                            child: Center(child: _SplashLogo()),
+                          ),
                           const SizedBox(height: 18),
-                          Text(
-                            en ? 'Sirati' : 'سيرتي',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 42,
-                              height: 1.15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
+                          MotionReveal(
+                            order: 1,
+                            child: Text(
+                              en ? 'Sirati' : 'سيرتي',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 42,
+                                height: 1.15,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                           SizedBox(height: titleGap),
-                          Text(
-                            en
-                                ? 'Build Your CV Professionally'
-                                : 'اصنع سيرتك الذاتية باحترافية',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 28,
-                              height: 1.35,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                          MotionReveal(
+                            order: 2,
+                            child: Text(
+                              en
+                                  ? 'Build Your CV Professionally'
+                                  : 'اصنع سيرتك الذاتية باحترافية',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                height: 1.35,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 14),
-                          Text(
-                            en
-                                ? 'Create an ATS-friendly CV, reach employers with confidence, and stand out with polished global templates.'
-                                : 'أنشئ سيرة ذاتية تجتاز فلاتر ATS، وتصل لأصحاب العمل بسهولة وبأرقى التصاميم العالمية.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              height: 1.75,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textHint,
+                          MotionReveal(
+                            order: 3,
+                            child: Text(
+                              en
+                                  ? 'Create an ATS-friendly CV, reach employers with confidence, and stand out with polished global templates.'
+                                  : 'أنشئ سيرة ذاتية تجتاز فلاتر ATS، وتصل لأصحاب العمل بسهولة وبأرقى التصاميم العالمية.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                height: 1.75,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textHint,
+                              ),
                             ),
                           ),
                           SizedBox(height: actionGap),
-                          ElevatedButton.icon(
-                            onPressed: _goToRegister,
-                            icon: Icon(
-                                en
-                                    ? Icons.arrow_forward_rounded
-                                    : Icons.arrow_back_rounded,
-                                size: 28),
-                            label:
-                                Text(en ? 'Create Account' : 'إنشاء حساب جديد'),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(64),
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              elevation: 8,
-                              shadowColor:
-                                  AppColors.primary.withValues(alpha: .25),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
+                          MotionReveal(
+                            order: 4,
+                            child: PressScale(
+                              child: ElevatedButton.icon(
+                                onPressed: _goToRegister,
+                                icon: Icon(
+                                    en
+                                        ? Icons.arrow_forward_rounded
+                                        : Icons.arrow_back_rounded,
+                                    size: 28),
+                                label:
+                                    Text(en ? 'Create Account' : 'إنشاء حساب جديد'),
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(64),
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 8,
+                                  shadowColor:
+                                      AppColors.primary.withValues(alpha: .25),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                               ),
                             ),
                           ),

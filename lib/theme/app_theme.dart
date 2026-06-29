@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/motion.dart';
+
 class AppColors {
   static const primary = Color(0xFF006A60);
   static const primaryDark = Color(0xFF00352F);
@@ -163,6 +165,15 @@ class AppTheme {
         progressIndicatorTheme: const ProgressIndicatorThemeData(
           color: AppColors.primary,
           linearTrackColor: AppColors.border,
+        ),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: SiratiPageTransitionsBuilder(),
+            TargetPlatform.iOS: SiratiPageTransitionsBuilder(),
+            TargetPlatform.macOS: SiratiPageTransitionsBuilder(),
+            TargetPlatform.windows: SiratiPageTransitionsBuilder(),
+            TargetPlatform.linux: SiratiPageTransitionsBuilder(),
+          },
         ),
       );
 }
